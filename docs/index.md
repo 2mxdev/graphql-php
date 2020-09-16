@@ -37,6 +37,7 @@ Library features include:
  - Tools for [batching requests](data-fetching.md#solving-n1-problem) to backend storage
  - [Async PHP platforms support](data-fetching.md#async-php) via promises
  - [Standard HTTP server](executing-queries.md#using-server)
+ - [Apollo Federation support](apollo-federation.md)
 
 Also, several [complementary tools](complementary-tools.md) are available which provide integrations with 
 existing PHP frameworks, add support for Relay, etc.

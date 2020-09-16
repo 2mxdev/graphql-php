@@ -11,6 +11,7 @@ use GraphQL\Language\AST\EnumTypeDefinitionNode;
 use GraphQL\Language\AST\InputObjectTypeDefinitionNode;
 use GraphQL\Language\AST\InterfaceTypeDefinitionNode;
 use GraphQL\Language\AST\ObjectTypeDefinitionNode;
+use GraphQL\Language\AST\ObjectTypeExtensionFederationNode;
 use GraphQL\Language\AST\ScalarTypeDefinitionNode;
 use GraphQL\Language\AST\SchemaDefinitionNode;
 use GraphQL\Language\AST\TypeDefinitionNode;
@@ -118,6 +119,7 @@ class BuildSchema
                     $schemaDef = $definition;
                     break;
                 case $definition instanceof TypeDefinitionNode:
+                case $definition instanceof ObjectTypeExtensionFederationNode:
                     $typeName = $definition->name->value;
                     if (isset($this->nodeMap[$typeName])) {
                         throw new Error(sprintf('Type "%s" was defined more than once.', $typeName));

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace GraphQL\Utils;
 
 use GraphQL\Error\Error;
+use GraphQL\Language\AST\DirectiveNode;
+use GraphQL\Language\AST\ObjectTypeExtensionFederationNode;
 use GraphQL\Language\Printer;
 use GraphQL\Type\Definition\Directive;
 use GraphQL\Type\Definition\EnumType;
@@ -370,8 +372,42 @@ class SchemaPrinter
             )
             : '';
 
+        if ($type->astNode instanceof ObjectTypeExtensionFederationNode) {
+            return self::printDescription($options, $type) .
+                sprintf("extend type %s%s %s {\n%s\n}", $type->name, $implementedInterfaces,
+                    self::printFederatedTypeDirectives($type->astNode), self::printFederatedTypeFields($options, $type));
+        }
+
         return self::printDescription($options, $type) .
             sprintf("type %s%s {\n%s\n}", $type->name, $implementedInterfaces, self::printFields($options, $type));
+    }
+
+    protected static function printFederatedTypeDirectives(ObjectTypeExtensionFederationNode $node)
+    {
+        if (!count($node->directives))
+            return '';
+
+        return implode(' ', array_map(function(DirectiveNode $directive){
+            return sprintf("@%s(%s: \"%s\")", $directive->name->value, $directive->arguments[0]->name->value, $directive->arguments[0]->value->value);
+        }, iterator_to_array($node->directives)));
+    }
+
+    protected static function printFederatedTypeFields(array $options, $type)
+    {
+        $fields = array_values($type->getFields());
+
+        return implode(
+            "\n",
+            array_map(
+                static function ($f, $i) use ($options, $type) : string {
+                    return self::printDescription($options, $f, '  ', !$i) . '  ' .
+                        $f->name . self::printArgs($options, $f->args, '  ') . ': ' .
+                        (string)$f->getType() . ' @external';
+                },
+                $fields,
+                array_keys($fields)
+            )
+        );
     }
 
     /**

@@ -8,6 +8,7 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\DirectiveDefinitionNode;
 use GraphQL\Language\AST\DirectiveNode;
 use GraphQL\Language\AST\Node;
+use GraphQL\Language\AST\ObjectTypeExtensionFederationNode;
 use GraphQL\Type\Definition\Directive;
 use GraphQL\Validator\ASTValidationContext;
 use GraphQL\Validator\SDLValidationContext;
@@ -55,7 +56,7 @@ class UniqueDirectivesPerLocation extends ValidationRule
 
         return [
             'enter' => static function (Node $node) use ($uniqueDirectiveMap, $context) : void {
-                if (! isset($node->directives)) {
+                if (! isset($node->directives) || $node instanceof ObjectTypeExtensionFederationNode) {
                     return;
                 }
 
