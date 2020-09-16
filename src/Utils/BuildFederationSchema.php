@@ -67,7 +67,9 @@ extend type Query {
 SDL;
             $schema = SchemaExtender::extend($schema, Parser::parse($sdl));
 
-            return $schema;
+
         }
+
+        return $schema;
     }
 }
