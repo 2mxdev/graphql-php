@@ -18,6 +18,7 @@ use GraphQL\Language\AST\NamedTypeNode;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\NonNullTypeNode;
 use GraphQL\Language\AST\ObjectTypeDefinitionNode;
+use GraphQL\Language\AST\ObjectTypeExtensionFederationNode;
 use GraphQL\Language\AST\ScalarTypeDefinitionNode;
 use GraphQL\Language\AST\TypeNode;
 use GraphQL\Language\AST\UnionTypeDefinitionNode;
@@ -242,7 +243,8 @@ class ASTDefinitionBuilder
     }
 
     /**
-     * @param ObjectTypeDefinitionNode|InterfaceTypeDefinitionNode|EnumTypeDefinitionNode|ScalarTypeDefinitionNode|InputObjectTypeDefinitionNode|UnionTypeDefinitionNode $def
+     * @param ObjectTypeDefinitionNode|ObjectTypeExtensionFederationNode|InterfaceTypeDefinitionNode|EnumTypeDefinitionNode|ScalarTypeDefinitionNode
+     * |InputObjectTypeDefinitionNode|UnionTypeDefinitionNode $def
      *
      * @return CustomScalarType|EnumType|InputObjectType|InterfaceType|ObjectType|UnionType
      *
@@ -253,6 +255,8 @@ class ASTDefinitionBuilder
         switch (true) {
             case $def instanceof ObjectTypeDefinitionNode:
                 return $this->makeTypeDef($def);
+            case $def instanceof ObjectTypeExtensionFederationNode:
+                return $this->makeExtendFederatedTypeDef($def);
             case $def instanceof InterfaceTypeDefinitionNode:
                 return $this->makeInterfaceDef($def);
             case $def instanceof EnumTypeDefinitionNode:
@@ -266,6 +270,19 @@ class ASTDefinitionBuilder
             default:
                 throw new Error(sprintf('Type kind of %s not supported.', $def->kind));
         }
+    }
+
+    private function makeExtendFederatedTypeDef(ObjectTypeExtensionFederationNode $def)
+    {
+        $typeName = $def->name->value;
+
+        return new ObjectType([
+            'name'        => $typeName,
+            'fields'      => function () use ($def) {
+                return $this->makeFieldDefMap($def);
+            },
+            'astNode'     => $def,
+        ]);
     }
 
     private function makeTypeDef(ObjectTypeDefinitionNode $def)
