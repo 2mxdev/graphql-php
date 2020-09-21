@@ -7,8 +7,6 @@
 This is a PHP implementation of the GraphQL [specification](https://github.com/facebook/graphql)
 based on the [reference implementation in JavaScript](https://github.com/graphql/graphql-js).
 
-Fixes for apollo-federation works.
-
 ## Installation
 Via composer:
 ```
