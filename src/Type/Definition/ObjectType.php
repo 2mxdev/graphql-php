@@ -67,6 +67,11 @@ class ObjectType extends Type implements OutputType, CompositeType, NullableType
     public $resolveFieldFn;
 
     /**
+     * @var array
+     */
+    public $directives;
+
+    /**
      * Lazily initialized.
      *
      * @var FieldDefinition[]
@@ -103,6 +108,7 @@ class ObjectType extends Type implements OutputType, CompositeType, NullableType
         $this->resolveFieldFn    = $config['resolveField'] ?? null;
         $this->astNode           = $config['astNode'] ?? null;
         $this->extensionASTNodes = $config['extensionASTNodes'] ?? [];
+        $this->directives        = $config['directives'] ?? [];
         $this->config            = $config;
     }
 
@@ -203,6 +209,29 @@ class ObjectType extends Type implements OutputType, CompositeType, NullableType
         }
 
         return $this->interfaces;
+    }
+
+    /**
+     * @return InterfaceType[]
+     */
+    public function getDirectives() : array
+    {
+        if (! isset($this->directives)) {
+            $directives = $this->config['directives'] ?? [];
+            if (is_callable($directives)) {
+                $directives = $directives();
+            }
+
+            if ($directives !== null && ! is_array($directives)) {
+                throw new InvariantViolation(
+                    sprintf('%s directives must be an Array or a callable which returns an Array.', $this->name)
+                );
+            }
+
+            $this->directives = $directives;
+        }
+
+        return $this->directives;
     }
 
     /**

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace GraphQL\Utils;
 
 use GraphQL\Error\Error;
+use GraphQL\Language\AST\ArgumentNode;
 use GraphQL\Language\AST\DirectiveNode;
 use GraphQL\Language\AST\ObjectTypeExtensionFederationNode;
 use GraphQL\Language\Printer;
 use GraphQL\Type\Definition\Directive;
 use GraphQL\Type\Definition\EnumType;
+use GraphQL\Type\Definition\FieldDefinition;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\InterfaceType;
 use GraphQL\Type\Definition\ObjectType;
@@ -372,6 +374,21 @@ class SchemaPrinter
             )
             : '';
 
+        $directives = $type->getDirectives();
+        $implementedDirectives = count($directives) > 0
+            ? ' ' . implode(
+                ' ',
+                array_map(
+                    static function (Directive $directive) : string {
+                        return sprintf("@%s(%s)", $directive->name, implode(' ', array_map(function(ArgumentNode $arg){
+                            return sprintf("%s: \"%s\"", $arg->name, $arg->value);
+                        }, $directive->args)));
+                    },
+                    $directives
+                )
+            )
+            : '';
+
         if ($type->astNode instanceof ObjectTypeExtensionFederationNode) {
             return self::printDescription($options, $type) .
                 sprintf("extend type %s%s %s {\n%s\n}", $type->name, $implementedInterfaces,
@@ -379,7 +396,24 @@ class SchemaPrinter
         }
 
         return self::printDescription($options, $type) .
-            sprintf("type %s%s {\n%s\n}", $type->name, $implementedInterfaces, self::printFields($options, $type));
+            sprintf("%stype %s%s%s {\n%s\n}", self::printExtendField($type), $type->name, $implementedInterfaces, $implementedDirectives,self::printFields($options, $type));
+    }
+
+    protected static function printExtendField(ObjectType $type)
+    {
+        if (!$fields = $type->getFields())
+            return '';
+
+        foreach ($fields as $field) {
+            if (isset($field->directives) && count($field->directives)) {
+                foreach ($field->directives as $directive) {
+                    if ($directive->name === 'external')
+                        return 'extend ';
+                }
+            }
+        }
+
+        return '';
     }
 
     protected static function printFederatedTypeDirectives(ObjectTypeExtensionFederationNode $node)
@@ -389,7 +423,7 @@ class SchemaPrinter
 
         return implode(' ', array_map(function(DirectiveNode $directive){
             return sprintf("@%s(%s: \"%s\")", $directive->name->value, $directive->arguments[0]->name->value, $directive->arguments[0]->value->value);
-        }, iterator_to_array($node->directives)));
+        }, is_array($node->directives) ? $node->directives : iterator_to_array($node->directives)));
     }
 
     protected static function printFederatedTypeFields(array $options, $type)
@@ -423,12 +457,22 @@ class SchemaPrinter
                 static function ($f, $i) use ($options) : string {
                     return self::printDescription($options, $f, '  ', ! $i) . '  ' .
                         $f->name . self::printArgs($options, $f->args, '  ') . ': ' .
-                        (string) $f->getType() . self::printDeprecated($f);
+                        (string) $f->getType() . self::printFieldDirectives($f) . self::printDeprecated($f);
                 },
                 $fields,
                 array_keys($fields)
             )
         );
+    }
+
+    protected static function printFieldDirectives(FieldDefinition $field)
+    {
+        if (!$field->directives)
+            return '';
+
+        return implode(' ', array_map(function(Directive $directive){
+            return ' @' . $directive->name;
+        }, $field->directives));
     }
 
     protected static function printDeprecated($fieldOrEnumVal) : string

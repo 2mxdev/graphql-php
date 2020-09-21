@@ -39,6 +39,7 @@ use GraphQL\Language\AST\NonNullTypeNode;
 use GraphQL\Language\AST\NullValueNode;
 use GraphQL\Language\AST\ObjectFieldNode;
 use GraphQL\Language\AST\ObjectTypeDefinitionNode;
+use GraphQL\Language\AST\ObjectTypeExtensionFederationNode;
 use GraphQL\Language\AST\ObjectTypeExtensionNode;
 use GraphQL\Language\AST\ObjectValueNode;
 use GraphQL\Language\AST\OperationDefinitionNode;
@@ -1599,6 +1600,31 @@ class Parser
         $directives = $this->parseDirectives(true);
         $fields     = $this->parseFieldsDefinition();
 
+        $isFederated = false;
+        $federationExternalPrimaryFields = [];
+        // to determine if there are apollo federation fields declaration check type and field directives
+        if (count($directives) !== 0 && count($fields) !== 0) {
+            foreach ($directives as $typeDirective) {
+                if ($typeDirective->name->value === 'key' && count($typeDirective->arguments) > 0) {
+                    foreach ($fields as $field) {
+                        if (!$field->name->value === $typeDirective->arguments[0]->value->value)
+                            continue;
+
+                        // check if key field from type declaration exists in field's list with @external directive
+                        if (count($field->directives) !== 0) {
+                            $externalDirectives = array_map(function (DirectiveNode $fieldDirective) {
+                                return $fieldDirective->name->value === 'external';
+                            }, iterator_to_array($field->directives));
+                            if (count($externalDirectives)) {
+                                $isFederated = true;
+                                $federationExternalPrimaryFields[$field->name->value] = $field;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (count($interfaces) === 0 &&
             count($directives) === 0 &&
             count($fields) === 0
@@ -1606,7 +1632,9 @@ class Parser
             throw $this->unexpected();
         }
 
-        return new ObjectTypeExtensionNode([
+        $type = $isFederated ? ObjectTypeExtensionFederationNode::class : ObjectTypeExtensionNode::class;
+
+        return new $type([
             'name'       => $name,
             'interfaces' => $interfaces,
             'directives' => $directives,
