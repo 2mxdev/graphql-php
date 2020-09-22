@@ -7,7 +7,7 @@ use GraphQL\Language\Parser;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Schema;
 
-class BuildFederationSchema extends BuildSchema
+class BuildFederationSchema
 {
     const FEDERATION_ADDITIONS = <<<SDL
 
