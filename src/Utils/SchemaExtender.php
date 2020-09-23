@@ -357,6 +357,7 @@ class SchemaExtender
                 'args' => static::extendArgs($field->args),
                 'astNode' => $field->astNode,
                 'resolve' => $field->resolveFn,
+                'directives' => $field->directives,
             ];
         }
 
@@ -392,6 +393,7 @@ class SchemaExtender
             'extensionASTNodes' => static::getExtensionASTNodes($type),
             'isTypeOf' => $type->config['isTypeOf'] ?? null,
             'resolveField' => $type->resolveFieldFn ?? null,
+            'directives' => $type->getDirectives(),
         ]);
     }
 

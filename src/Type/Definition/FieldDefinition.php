@@ -60,6 +60,13 @@ class FieldDefinition
      */
     public $config;
 
+    /**
+     * Fields directives here
+     *
+     * @var mixed|null
+     */
+    public $directives;
+
     /** @var OutputType&Type */
     private $type;
 
@@ -79,6 +86,8 @@ class FieldDefinition
         $this->description       = $config['description'] ?? null;
         $this->deprecationReason = $config['deprecationReason'] ?? null;
         $this->astNode           = $config['astNode'] ?? null;
+
+        $this->directives        = $config['directives'] ?? null;
 
         $this->config = $config;
 
